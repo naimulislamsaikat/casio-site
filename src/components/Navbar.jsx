@@ -4,6 +4,7 @@ export default function Navbar() {
       <div className="wrap nav-in">
         <a className="brand" href="#top">Casio</a>
         <nav>
+          <a href="#showcase">Craft</a>
           <a href="#collection">Watches</a>
           <a href="#story">Our story</a>
         </nav>
