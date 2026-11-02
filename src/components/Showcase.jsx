@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 
 const features = [
@@ -34,6 +34,7 @@ const features = [
 
 export default function Showcase() {
   const containerRef = useRef(null);
+  const [showcaseMode, setShowcaseMode] = useState("photo"); // "photo" | "schematic"
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -112,6 +113,26 @@ export default function Showcase() {
 
           {/* Right Column: Sticky Featured Watch Stage */}
           <div className="showcase-center-stage">
+            {/* View Switcher: Original Photo vs Blueprint */}
+            <div className="showcase-view-switcher" role="tablist" aria-label="Showcase Mode">
+              <button
+                className={`showcase-switcher-pill ${showcaseMode === "photo" ? "active" : ""}`}
+                onClick={() => setShowcaseMode("photo")}
+                role="tab"
+                aria-selected={showcaseMode === "photo"}
+              >
+                Original Photo
+              </button>
+              <button
+                className={`showcase-switcher-pill ${showcaseMode === "schematic" ? "active" : ""}`}
+                onClick={() => setShowcaseMode("schematic")}
+                role="tab"
+                aria-selected={showcaseMode === "schematic"}
+              >
+                Blueprint
+              </button>
+            </div>
+
             <motion.div
               className="showcase-watch-wrapper"
               style={{
@@ -119,25 +140,42 @@ export default function Showcase() {
                 scale: watchScale,
               }}
             >
-              {/* Luxury Illuminated Watch Representation */}
-              <div className="showcase-watch-fixture">
-                <div className="fixture-halo" />
-                <div className="fixture-strap fixture-strap-top" />
-                <div className="fixture-bezel" data-shape="octagon">
-                  <div className="fixture-dial">
-                    <div className="dial-index-ring" />
-                    <div className="dial-hands">
-                      <div className="hand hand-hour" />
-                      <div className="hand hand-min" />
-                      <div className="hand-pin" />
-                    </div>
-                    <div className="dial-lcd-sub">
-                      <span>MON 10:08</span>
-                    </div>
+              {showcaseMode === "photo" ? (
+                <div className="showcase-photo-fixture">
+                  <div className="fixture-halo" />
+                  <div className="showcase-photo-frame">
+                    <img
+                      className="showcase-watch-img"
+                      src="/images/ga2100.jpg"
+                      alt="Casio G-Shock GA-2100 Original Studio Photo"
+                    />
+                    <div className="showcase-photo-overlay-glass" />
+                  </div>
+                  <div className="showcase-photo-badge">
+                    <span>GA-2100-1A1 &bull; STUDIO ARCHIVE</span>
                   </div>
                 </div>
-                <div className="fixture-strap fixture-strap-bottom" />
-              </div>
+              ) : (
+                /* Luxury Illuminated Blueprint Fixture */
+                <div className="showcase-watch-fixture">
+                  <div className="fixture-halo" />
+                  <div className="fixture-strap fixture-strap-top" />
+                  <div className="fixture-bezel" data-shape="octagon">
+                    <div className="fixture-dial">
+                      <div className="dial-index-ring" />
+                      <div className="dial-hands">
+                        <div className="hand hand-hour" />
+                        <div className="hand hand-min" />
+                        <div className="hand-pin" />
+                      </div>
+                      <div className="dial-lcd-sub">
+                        <span>MON 10:08</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="fixture-strap fixture-strap-bottom" />
+                </div>
+              )}
 
               <div className="showcase-reflection-disc" />
             </motion.div>
