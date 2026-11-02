@@ -77,13 +77,18 @@ const WatchCard = forwardRef(function WatchCard({ watch: w, onSelect, index = 0 
             <i className="band" />
           </>
         ) : (
-          <img
-            className="photo"
-            src={w.image}
-            alt={w.name}
-            loading="lazy"
-            onError={() => setBroken(true)}
-          />
+          <>
+            <img
+              className="photo"
+              src={w.image}
+              alt={w.name}
+              loading="lazy"
+              onError={() => setBroken(true)}
+            />
+            <span className="card-photo-tag" aria-label="Authentic studio photo">
+              ORIGINAL
+            </span>
+          </>
         )}
       </motion.div>
 
