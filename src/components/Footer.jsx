@@ -140,7 +140,7 @@ export default function Footer() {
             <div className="footer-group">
               <span className="group-heading">HEADQUARTERS</span>
               <span>Shibuya, Tokyo</span>
-              <span>support@example.com</span>
+              <span>naimulislam.dev@gmail.com</span>
               <span>Universal Caliber Lab</span>
             </div>
           </div>
