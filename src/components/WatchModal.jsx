@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import Magnetic from "./Magnetic.jsx";
 
@@ -10,6 +10,7 @@ import Magnetic from "./Magnetic.jsx";
  */
 export default function WatchModal({ watch: w, onClose }) {
   const modalRef = useRef(null);
+  const [imgBroken, setImgBroken] = useState(false);
 
   useEffect(() => {
     // Handle Escape key
@@ -71,7 +72,7 @@ export default function WatchModal({ watch: w, onClose }) {
           </div>
 
           <div className="modal-grid">
-            {/* Visual Column: Dial & Case Artwork */}
+            {/* Visual Column: Authentic Photography & Case Visual */}
             <div className="modal-visual">
               <motion.div
                 layoutId={`watch-art-${w.id}`}
@@ -79,14 +80,25 @@ export default function WatchModal({ watch: w, onClose }) {
                 data-shape={w.shape}
                 style={{ "--b": w.body, "--f": w.face, "--s": w.strap }}
               >
-                <i className="band" />
-                <i className="case">
-                  <i className="face">{w.digits || "QUARTZ"}</i>
-                </i>
-                <i className="band" />
+                {imgBroken ? (
+                  <>
+                    <i className="band" />
+                    <i className="case">
+                      <i className="face">{w.digits || "QUARTZ"}</i>
+                    </i>
+                    <i className="band" />
+                  </>
+                ) : (
+                  <img
+                    className="modal-photo"
+                    src={w.image}
+                    alt={w.name}
+                    onError={() => setImgBroken(true)}
+                  />
+                )}
               </motion.div>
               <div className="modal-art-badge">
-                <span>HAND-CALIBRATED TOKYO SPEC</span>
+                <span>ORIGINAL ARCHIVE PHOTOGRAPHY &bull; {w.releaseYear || "TOKYO SPEC"}</span>
               </div>
             </div>
 
@@ -102,23 +114,27 @@ export default function WatchModal({ watch: w, onClose }) {
                 <h4>TECHNICAL ARCHITECTURE</h4>
                 <div className="spec-row">
                   <span className="spec-name">Movement Caliber</span>
-                  <span className="spec-val">High-Torque Quartz Oscillator</span>
+                  <span className="spec-val">{w.caliber || "High-Torque Quartz Oscillator"}</span>
                 </div>
                 <div className="spec-row">
                   <span className="spec-name">Accuracy Standard</span>
-                  <span className="spec-val">±15 Seconds / Month</span>
+                  <span className="spec-val">{w.accuracy || "±15 Seconds / Month"}</span>
                 </div>
                 <div className="spec-row">
                   <span className="spec-name">Case Structure</span>
-                  <span className="spec-val">{w.shape === "octagon" ? "Carbon Core Octagon" : "Impact-Molded Resin"}</span>
+                  <span className="spec-val">{w.caseStructure || (w.shape === "octagon" ? "Carbon Core Octagon" : "Impact-Molded Resin")}</span>
                 </div>
                 <div className="spec-row">
                   <span className="spec-name">Water Resistance</span>
-                  <span className="spec-val">20-Bar / 200M Hermetic Seal</span>
+                  <span className="spec-val">{w.waterResist || "20-Bar / 200M Hermetic Seal"}</span>
                 </div>
                 <div className="spec-row">
-                  <span className="spec-name">Battery Longevity</span>
-                  <span className="spec-val">7-Year High-Density Cell</span>
+                  <span className="spec-name">Power Longevity</span>
+                  <span className="spec-val">{w.batteryLife || "7-Year High-Density Cell"}</span>
+                </div>
+                <div className="spec-row">
+                  <span className="spec-name">Net Weight</span>
+                  <span className="spec-val">{w.weight || "Lightweight Build"}</span>
                 </div>
               </div>
 
