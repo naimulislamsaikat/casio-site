@@ -6,65 +6,162 @@ import Magnetic from "./Magnetic.jsx";
  * WatchModal
  * Shared-element detail modal using Framer Motion layoutId.
  * Displays expanded technical specifications, craftsmanship notes,
- * and high-fidelity dial artwork. Includes keyboard Escape handling and focus trap.
+ * snapshot gallery (when available), and high-fidelity dial artwork.
+ * Includes keyboard Escape handling, robust focus trap, and focus restoration.
  */
-export default function WatchModal({ watch: w, onClose }) {
+export default function WatchModal({ watch: w, onClose, onSelect }) {
   const modalRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  const onSelectRef = useRef(onSelect);
+
   const [imgBroken, setImgBroken] = useState(false);
   const [selectedImage, setSelectedImage] = useState(w?.image || "");
 
-  const galleryImages = Array.isArray(w?.snapshots) && w.snapshots.length
-    ? w.snapshots
-    : [w?.image || ""];
+  // Keep callback references stable to prevent unnecessary effect re-executions
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
+  useEffect(() => {
+    onSelectRef.current = onSelect;
+  }, [onSelect]);
+
+  // Synchronize image and reset failure state whenever target watch changes
   useEffect(() => {
     setSelectedImage(w?.image || "");
     setImgBroken(false);
   }, [w?.id, w?.image]);
 
+  const galleryImages =
+    Array.isArray(w?.snapshots) && w.snapshots.length > 0
+      ? w.snapshots
+      : w?.image
+      ? [w.image]
+      : [];
+
   useEffect(() => {
-    // Handle Escape key
+    if (!w) return;
+
+    // Cache the currently focused element to restore it upon modal dismissal
+    const previouslyFocused = document.activeElement;
+
+    // Handle Escape dismissal and Tab key focus trapping
     const handleKeyDown = (e) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCloseRef.current?.();
+        return;
+      }
+
+      if (e.key === "Tab") {
+        if (!modalRef.current) return;
+        const focusableElements = modalRef.current.querySelectorAll(
+          'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+
+        if (!focusableElements.length) {
+          e.preventDefault();
+          return;
+        }
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+          if (
+            document.activeElement === firstElement ||
+            !modalRef.current.contains(document.activeElement)
+          ) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (
+            document.activeElement === lastElement ||
+            !modalRef.current.contains(document.activeElement)
+          ) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
+      }
     };
+
     window.addEventListener("keydown", handleKeyDown);
 
-    // Trap focus inside modal
-    if (modalRef.current) {
-      const closeBtn = modalRef.current.querySelector(".modal-close-btn");
-      if (closeBtn) closeBtn.focus();
-    }
+    // Initial focus placed safely onto the primary close button
+    const initialFocusTimer = setTimeout(() => {
+      if (modalRef.current) {
+        const closeBtn = modalRef.current.querySelector(".modal-close-btn");
+        if (closeBtn) {
+          closeBtn.focus();
+        } else {
+          modalRef.current.focus?.();
+        }
+      }
+    }, 50);
 
-    // Prevent body scroll behind modal
+    // Prevent background scrolling behind active modal
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
     return () => {
+      clearTimeout(initialFocusTimer);
       window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = originalOverflow;
+      if (previouslyFocused && typeof previouslyFocused.focus === "function") {
+        previouslyFocused.focus();
+      }
     };
-  }, [onClose]);
+  }, [w?.id]);
 
   if (!w) return null;
 
+  const handleSelect = () => {
+    if (onSelectRef.current) {
+      onSelectRef.current(w);
+    }
+    onCloseRef.current?.();
+  };
+
   return (
-    <div className="modal-backdrop-wrap" role="dialog" aria-modal="true" aria-labelledby="modal-watch-title">
+    <div
+      className="modal-backdrop-wrap"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-watch-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onCloseRef.current?.();
+        }
+      }}
+    >
       {/* Blurred dimmed backdrop */}
       <motion.div
         className="modal-backdrop"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.3 }}
-        onClick={onClose}
+        transition={{ duration: 0.25 }}
+        onClick={() => onCloseRef.current?.()}
+        aria-hidden="true"
       />
 
       {/* Main expanded card with layoutId shared element animation */}
-      <div className="modal-container" onClick={onClose}>
+      <div
+        className="modal-container"
+        data-lenis-prevent
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            onCloseRef.current?.();
+          }
+        }}
+      >
         <motion.div
           ref={modalRef}
           layoutId={`watch-card-${w.id}`}
           className="modal-card"
+          tabIndex={-1}
           onClick={(e) => e.stopPropagation()}
           transition={{ type: "spring", stiffness: 320, damping: 28 }}
         >
@@ -72,8 +169,9 @@ export default function WatchModal({ watch: w, onClose }) {
           <div className="modal-close-wrap">
             <Magnetic strength={0.4}>
               <button
+                type="button"
                 className="modal-close-btn"
-                onClick={onClose}
+                onClick={() => onCloseRef.current?.()}
                 aria-label="Close specifications modal"
               >
                 &times;
@@ -87,8 +185,12 @@ export default function WatchModal({ watch: w, onClose }) {
               <motion.div
                 layoutId={`watch-art-${w.id}`}
                 className="art modal-art"
-                data-shape={w.shape}
-                style={{ "--b": w.body, "--f": w.face, "--s": w.strap }}
+                data-shape={w.shape || "square"}
+                style={{
+                  "--b": w.body || "#222",
+                  "--f": w.face || "#c3cda6",
+                  "--s": w.strap || "#333",
+                }}
               >
                 {imgBroken ? (
                   <>
@@ -101,21 +203,28 @@ export default function WatchModal({ watch: w, onClose }) {
                 ) : (
                   <img
                     className="modal-photo"
-                    src={selectedImage}
+                    src={selectedImage || w.image}
                     alt={w.name}
                     onError={() => {
-                      if (selectedImage !== w.image) setSelectedImage(w.image);
-                      setImgBroken(true);
+                      if (selectedImage && selectedImage !== w.image) {
+                        setSelectedImage(w.image);
+                      } else {
+                        setImgBroken(true);
+                      }
                     }}
                   />
                 )}
               </motion.div>
 
               {galleryImages.length > 1 && (
-                <div className="modal-gallery" aria-label={`${w.name} snapshot gallery`}>
+                <div
+                  className="modal-gallery"
+                  role="tablist"
+                  aria-label={`${w.name} snapshot gallery`}
+                >
                   {galleryImages.map((src, idx) => (
                     <button
-                      key={`${w.id}-${src}-${idx}`}
+                      key={`${w.id}-thumb-${idx}`}
                       type="button"
                       className={`modal-thumb ${selectedImage === src ? "active" : ""}`}
                       onClick={() => {
@@ -123,6 +232,7 @@ export default function WatchModal({ watch: w, onClose }) {
                         setImgBroken(false);
                       }}
                       aria-label={`View snapshot ${idx + 1} for ${w.name}`}
+                      aria-pressed={selectedImage === src}
                     >
                       <img
                         src={src}
@@ -137,14 +247,21 @@ export default function WatchModal({ watch: w, onClose }) {
               )}
 
               <div className="modal-art-badge">
-                <span>ORIGINAL ARCHIVE PHOTOGRAPHY &bull; {w.releaseYear || "TOKYO SPEC"}</span>
+                <span>
+                  {imgBroken ? "VECTOR ARCHIVE SCHEMATIC" : "ORIGINAL ARCHIVE PHOTOGRAPHY"} &bull;{" "}
+                  {w.releaseYear || "TOKYO SPEC"}
+                </span>
               </div>
             </div>
 
             {/* Content Column: Lineage, Tagline, Specifications */}
             <div className="modal-info">
               <span className="line modal-line">{w.line} Collection</span>
-              <motion.h3 layoutId={`watch-title-${w.id}`} id="modal-watch-title" className="modal-title">
+              <motion.h3
+                layoutId={`watch-title-${w.id}`}
+                id="modal-watch-title"
+                className="modal-title"
+              >
                 {w.name}
               </motion.h3>
               <p className="modal-tagline">{w.tagline}</p>
@@ -161,7 +278,10 @@ export default function WatchModal({ watch: w, onClose }) {
                 </div>
                 <div className="spec-row">
                   <span className="spec-name">Case Structure</span>
-                  <span className="spec-val">{w.caseStructure || (w.shape === "octagon" ? "Carbon Core Octagon" : "Impact-Molded Resin")}</span>
+                  <span className="spec-val">
+                    {w.caseStructure ||
+                      (w.shape === "octagon" ? "Carbon Core Octagon" : "Impact-Molded Resin")}
+                  </span>
                 </div>
                 <div className="spec-row">
                   <span className="spec-name">Water Resistance</span>
@@ -177,22 +297,32 @@ export default function WatchModal({ watch: w, onClose }) {
                 </div>
               </div>
 
-              <div className="modal-features-list">
-                <h4>DISTINGUISHING TRAITS</h4>
-                <ul>
-                  {w.facts.map((f) => (
-                    <li key={f}>{f}</li>
-                  ))}
-                </ul>
-              </div>
+              {Array.isArray(w.facts) && w.facts.length > 0 && (
+                <div className="modal-features-list">
+                  <h4>DISTINGUISHING TRAITS</h4>
+                  <ul>
+                    {w.facts.map((f, idx) => (
+                      <li key={`${f}-${idx}`}>{f}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               <div className="modal-actions">
                 <Magnetic strength={0.3}>
-                  <button className="btn modal-primary-btn" onClick={onClose}>
+                  <button
+                    type="button"
+                    className="btn modal-primary-btn"
+                    onClick={handleSelect}
+                  >
                     Select Model
                   </button>
                 </Magnetic>
-                <button className="link modal-cancel-btn" onClick={onClose}>
+                <button
+                  type="button"
+                  className="link modal-cancel-btn"
+                  onClick={() => onCloseRef.current?.()}
+                >
                   Return to collection
                 </button>
               </div>
@@ -203,938 +333,3 @@ export default function WatchModal({ watch: w, onClose }) {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-} 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-		
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-											the comment got corrupted. 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-																																																																																																																																																																																																																																																																														}

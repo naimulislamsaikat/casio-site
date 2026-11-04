@@ -146,7 +146,7 @@ export default function Showcase() {
                   <div className="showcase-photo-frame">
                     <img
                       className="showcase-watch-img"
-                      src="/images/ga2100.jpg"
+                      src={`${import.meta.env.BASE_URL}images/ga2100.jpg`}
                       alt="Casio G-Shock GA-2100 Original Studio Photo"
                     />
                     <div className="showcase-photo-overlay-glass" />

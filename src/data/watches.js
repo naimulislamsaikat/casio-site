@@ -150,5 +150,11 @@ const base = [
 
 // Photos in public/images named after each id (f91w.jpg, ga2100.jpg, etc.)
 // Missing files fall back to the CSS illustration automatically.
-export const watches = base.map((w) => ({ ...w, image: `/images/${w.id}.jpg` }));
+const baseUrl = import.meta.env.BASE_URL || "/";
+const basePrefix = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+
+export const watches = base.map((w) => ({
+  ...w,
+  image: `${basePrefix}images/${w.id}.jpg`,
+}));
 
