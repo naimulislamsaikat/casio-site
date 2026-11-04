@@ -28,8 +28,19 @@ Casio is a responsive, single-page product experience built with React. It pairs
 
 ## Screenshots
 
-Add your UI screenshots to `screenshots/` in the repository, then replace or uncomment the examples below. Use clear filenames such as `desktop-home.png`, `collection.png`, and `mobile-home.png`.
+<img width="1897" height="870" alt="image" src="https://github.com/user-attachments/assets/b8d89bd6-8b78-463d-9f88-00b43c2df081" />
+<img width="1900" height="862" alt="image" src="https://github.com/user-attachments/assets/9941eac2-cbd7-4a55-bf0b-9c571f78f542" />
+<img width="1901" height="868" alt="image" src="https://github.com/user-attachments/assets/6fbe3e8c-c1b8-41c6-a737-d3a489fde709" />
+<img width="1900" height="870" alt="image" src="https://github.com/user-attachments/assets/6050eb1e-3659-489c-bd61-ecedbcd32925" />
+<img width="1901" height="872" alt="image" src="https://github.com/user-attachments/assets/4c685901-832e-441f-a9fe-cf33a12ed937" />
+<img width="1900" height="871" alt="image" src="https://github.com/user-attachments/assets/07b022a2-0cdb-4d17-94b2-481138dece19" />
+<img width="1905" height="870" alt="image" src="https://github.com/user-attachments/assets/6554e96f-e8d2-4d05-a1b1-3d83ac26213f" />
+<img width="1900" height="867" alt="image" src="https://github.com/user-attachments/assets/a868aefb-3855-4e11-9dc2-20193b01b0aa" />
+<img width="1902" height="527" alt="image" src="https://github.com/user-attachments/assets/a7219d23-08b6-4634-8bc5-c33960269e02" />
 
+<!--
+Add your UI screenshots to `screenshots/` in the repository, then replace or uncomment the examples below. Use clear filenames such as `desktop-home.png`, `collection.png`, and `mobile-home.png`.
+-->
 <!--
 ### Desktop
 ![Desktop home page](screenshots/desktop-home.png)
